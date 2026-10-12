@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plant Operations Portal</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #0b111e; }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="text-slate-200 min-h-screen flex flex-col">
+
+  <!-- TOP APP BAR -->
+  <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-50 px-8 py-5 flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+        <i class="fa-solid fa-industry text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          PLANT OPERATIONS PORTAL
+        </h1>
+        <p class="text-sm text-slate-400">Centralized Dashboard Access & Live Intelligence</p>
+      </div>
+    </div>
+    <div class="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+      System Online
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-grow flex items-center justify-center px-4 sm:px-6 py-12">
+    <div class="max-w-6xl w-full space-y-8">
+      
+      <div class="text-center space-y-2 mb-12">
+        <h2 class="text-3xl font-bold text-white">Select a Machine Dashboard</h2>
+        <p class="text-slate-400">Click on a module below to access real-time production, wastage, and operator analytics.</p>
+      </div>
+
+      <!-- DASHBOARD LINKS GRID -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- 1. Flexo Machine -->
+        <a href="Flexo Dash.html" class="glass-card rounded-2xl p-6 group hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/20 hover:border-indigo-500/50 transition-all duration-300 flex flex-col">
+          <div class="w-14 h-14 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+            <i class="fa-solid fa-print text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2 group-hover:text-indigo-400 transition-colors">Flexo Machine</h3>
+          <p class="text-sm text-slate-400 flex-grow mb-6">Access live intelligence, day-wise timeline trends, and operator breakdown for the Flexo printing line.</p>
+          <div class="flex items-center text-sm font-semibold text-indigo-400 group-hover:text-indigo-300">
+            Open Dashboard <i class="fa-solid fa-arrow-right ml-2 transition-transform group-hover:translate-x-1"></i>
+          </div>
+        </a>
+
+        <!-- 2. Bag Lamination Machine -->
+        <a href="Lamination.html" class="glass-card rounded-2xl p-6 group hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 flex flex-col">
+          <div class="w-14 h-14 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+            <i class="fa-solid fa-layer-group text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">Bag Lamination</h3>
+          <p class="text-sm text-slate-400 flex-grow mb-6">Monitor total production meters, jobs handled, and detailed scrap composition (film, die, trim).</p>
+          <div class="flex items-center text-sm font-semibold text-emerald-400 group-hover:text-emerald-300">
+            Open Dashboard <i class="fa-solid fa-arrow-right ml-2 transition-transform group-hover:translate-x-1"></i>
+          </div>
+        </a>
+
+        <!-- 3. BCS Machine -->
+        <a href="BCS Dash 2.html" class="glass-card rounded-2xl p-6 group hover:-translate-y-2 hover:shadow-2xl hover:shadow-sky-500/20 hover:border-sky-500/50 transition-all duration-300 flex flex-col">
+          <div class="w-14 h-14 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400 mb-6 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+            <i class="fa-solid fa-gears text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2 group-hover:text-sky-400 transition-colors">BCS Machine</h3>
+          <p class="text-sm text-slate-400 flex-grow mb-6">Track monthly KPIs, long fabric scrap rates, and stitching defect counts across Shift A and B.</p>
+          <div class="flex items-center text-sm font-semibold text-sky-400 group-hover:text-sky-300">
+            Open Dashboard <i class="fa-solid fa-arrow-right ml-2 transition-transform group-hover:translate-x-1"></i>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800 bg-slate-900/50 py-6 text-center text-sm text-slate-500">
+    <p>Consolidated Master Production Suite • Internal Secure Access Only</p>
+  </footer>
+
+</body>
+</html>

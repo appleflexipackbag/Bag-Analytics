@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flexo Operations Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Flatpickr (Modern Date Range Picker) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    /* Flatpickr dark styling tweak */
+    .flatpickr-calendar { background: #0f172a !important; border: 1px solid #334155 !important; border-radius: 1rem !important; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5) !important; }
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: #6366f1 !important; border-color: #6366f1 !important; }
+    .flatpickr-day.inRange { background: rgba(99, 102, 241, 0.25) !important; border-color: transparent !important; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+  <!-- TOP APP BAR -->
+  <header class="border-b border-slate-800 bg-slate-950/90 sticky top-0 z-50 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+        <i class="fa-solid fa-print text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+          FLEXO PRINTING PLANT
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Operations Dashboard</span>
+        </h1>
+        <p class="text-xs text-slate-400">Live intelligence • Consolidated Flexo data sync</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div id="syncStatus" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="syncText">Connecting to Google Sheet...</span>
+      </div>
+      <button onclick="fetchLiveFlexoData()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-rotate"></i> Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- FILTER CONTROL BAR -->
+    <section class="bg-slate-800/80 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur space-y-4">
+      
+      <!-- Top Row: Section Title & Clear -->
+      <div class="flex items-center justify-between border-b border-slate-700/50 pb-2.5">
+        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <i class="fa-solid fa-sliders text-indigo-400"></i> Production Filters & Range
+        </div>
+        <button onclick="resetFilters()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition flex items-center gap-1">
+          <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i> Reset All Filters
+        </button>
+      </div>
+
+      <!-- Quick Preset Buttons -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs text-slate-400 font-medium mr-1"><i class="fa-regular fa-clock text-slate-500 mr-1"></i>Quick Dates:</span>
+        <button onclick="setQuickDate('ALL')" class="quick-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition">All Time</button>
+        <button onclick="setQuickDate('THIS_MONTH')" class="quick-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition">This Month</button>
+        <button onclick="setQuickDate('LAST_MONTH')" class="quick-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition">Last Month</button>
+        <button onclick="setQuickDate('LAST_7_DAYS')" class="quick-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition">Last 7 Days</button>
+        <button onclick="setQuickDate('LAST_30_DAYS')" class="quick-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition">Last 30 Days</button>
+      </div>
+
+      <!-- Main Controls Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+        
+        <!-- Easy Unified Date Range Picker -->
+        <div class="lg:col-span-2">
+          <label class="block text-[11px] font-medium text-slate-400 mb-1">
+            <i class="fa-regular fa-calendar-days text-indigo-400 mr-1"></i>Date Range (Click once to select Start & End)
+          </label>
+          <div class="relative">
+            <input type="text" id="dateRangePicker" placeholder="Select dates..." readonly
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-8 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+            <i class="fa-regular fa-calendar absolute left-3 top-2.5 text-slate-500 text-xs pointer-events-none"></i>
+            <button onclick="clearDatePicker()" title="Clear Dates" class="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Machine Filter -->
+        <div>
+          <label class="block text-[11px] font-medium text-slate-400 mb-1">Machine</label>
+          <select id="filterMachine" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">All Machines</option>
+          </select>
+        </div>
+
+        <!-- Operator Filter -->
+        <div>
+          <label class="block text-[11px] font-medium text-slate-400 mb-1">Operator</label>
+          <select id="filterOperator" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">All Operators</option>
+          </select>
+        </div>
+
+        <!-- Shift Filter -->
+        <div>
+          <label class="block text-[11px] font-medium text-slate-400 mb-1">Shift</label>
+          <select id="filterShift" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">All Shifts</option>
+            <option value="A">Shift A</option>
+            <option value="B">Shift B</option>
+          </select>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- KPI CARDS -->
+    <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Total Output</span>
+          <i class="fa-solid fa-boxes-stacked text-indigo-400"></i>
+        </div>
+        <div id="kpiProduction" class="text-2xl font-extrabold text-white">0</div>
+        <div class="text-[11px] text-slate-400 mt-1">Bags produced</div>
+      </div>
+
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Total Wastage</span>
+          <i class="fa-solid fa-trash-can text-amber-400"></i>
+        </div>
+        <div id="kpiWastage" class="text-2xl font-extrabold text-amber-400">0 kg</div>
+        <div class="text-[11px] text-slate-400 mt-1">Flexo line waste</div>
+      </div>
+
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Scrap Rate</span>
+          <i class="fa-solid fa-percent text-emerald-400"></i>
+        </div>
+        <div id="kpiScrapRate" class="text-2xl font-extrabold text-emerald-400">0.00%</div>
+        <div class="text-[11px] text-slate-400 mt-1">Scrap to output ratio</div>
+      </div>
+
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Active Runs</span>
+          <i class="fa-solid fa-calendar-check text-sky-400"></i>
+        </div>
+        <div id="kpiRuns" class="text-2xl font-extrabold text-white">0</div>
+        <div class="text-[11px] text-slate-400 mt-1">Logged active shifts</div>
+      </div>
+
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-lg col-span-2 md:col-span-1">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Avg / Shift</span>
+          <i class="fa-solid fa-bolt text-purple-400"></i>
+        </div>
+        <div id="kpiAvgShift" class="text-2xl font-extrabold text-purple-300">0</div>
+        <div class="text-[11px] text-slate-400 mt-1">Bags per run average</div>
+      </div>
+    </section>
+
+    <!-- CHARTS -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-slate-800/70 border border-slate-700/70 rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-indigo-400"></i> Production Timeline Trend
+            </h2>
+            <p class="text-xs text-slate-400">Day-wise / Month-wise progression</p>
+          </div>
+          <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
+            <button onclick="setTrendGranularity('day')" id="btnTrendDay" class="px-2.5 py-1 text-xs rounded font-medium bg-indigo-600 text-white">Daily</button>
+            <button onclick="setTrendGranularity('month')" id="btnTrendMonth" class="px-2.5 py-1 text-xs rounded font-medium text-slate-400 hover:text-white">Monthly</button>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-slate-800/70 border border-slate-700/70 rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-simple text-purple-400"></i> Machine Performance Comparison
+            </h2>
+            <p class="text-xs text-slate-400">Total bags produced per machine</p>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="machineChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- BREAKDOWN TABLES -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-slate-800/70 border border-slate-700/70 rounded-2xl p-5 shadow-xl">
+        <h2 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-gears text-indigo-400"></i> Machine-wise Breakdown
+        </h2>
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] font-semibold border-b border-slate-700">
+              <tr>
+                <th class="py-2.5 px-3">Machine</th>
+                <th class="py-2.5 px-3 text-right">Production</th>
+                <th class="py-2.5 px-3 text-right">Wastage (kg)</th>
+                <th class="py-2.5 px-3 text-right">Avg / Shift</th>
+                <th class="py-2.5 px-3 text-right">Runs</th>
+              </tr>
+            </thead>
+            <tbody id="machineTableBody" class="divide-y divide-slate-700/50"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-slate-800/70 border border-slate-700/70 rounded-2xl p-5 shadow-xl">
+        <h2 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-user-gear text-emerald-400"></i> Operator-wise Breakdown
+        </h2>
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] font-semibold border-b border-slate-700">
+              <tr>
+                <th class="py-2.5 px-3">Operator</th>
+                <th class="py-2.5 px-3 text-right">Production</th>
+                <th class="py-2.5 px-3 text-right">Wastage (kg)</th>
+                <th class="py-2.5 px-3 text-right">Avg / Shift</th>
+                <th class="py-2.5 px-3 text-right">Runs</th>
+              </tr>
+            </thead>
+            <tbody id="operatorTableBody" class="divide-y divide-slate-700/50"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- DETAILED PRODUCTION LOG -->
+    <section class="bg-slate-800/70 border border-slate-700/70 rounded-2xl p-5 shadow-xl">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-slate-400"></i> Filtered Daily Production Log
+        </h2>
+        <span id="logCount" class="text-xs text-slate-400">Showing 0 records</span>
+      </div>
+      <div class="overflow-x-auto max-h-80 custom-scrollbar border border-slate-700/50 rounded-xl">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900 sticky top-0 text-slate-400 uppercase text-[10px] font-semibold border-b border-slate-700 z-10">
+            <tr>
+              <th class="py-2.5 px-3">Date</th>
+              <th class="py-2.5 px-3">Shift</th>
+              <th class="py-2.5 px-3">Machine</th>
+              <th class="py-2.5 px-3">Operator</th>
+              <th class="py-2.5 px-3 text-right">Opening</th>
+              <th class="py-2.5 px-3 text-right">Closing</th>
+              <th class="py-2.5 px-3 text-right">Production</th>
+              <th class="py-2.5 px-3 text-right">Wastage (kg)</th>
+              <th class="py-2.5 px-3">Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="detailedTableBody" class="divide-y divide-slate-700/50"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const SPREADSHEET_ID = "1Fd91NFNGeGNmpRBfzdONFDjAPN4VBXCleRmW8JfeiWs";
+    const GID = "1557337451"; // Sheet ID of Consolidated Flexo 
+
+    let allRecords = [];
+    let filteredRecords = [];
+    let trendGranularity = "day";
+    let trendChartInstance = null;
+    let machineChartInstance = null;
+    let flatpickrInstance = null;
+
+    let selectedStartDate = null;
+    let selectedEndDate = null;
+
+    // Initialize Flatpickr Date Picker
+    function initDatePicker() {
+      flatpickrInstance = flatpickr("#dateRangePicker", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "F j, Y",
+        showMonths: 2,
+        onClose: function(selectedDates) {
+          if (selectedDates.length === 2) {
+            selectedStartDate = formatDate(selectedDates[0]);
+            selectedEndDate = formatDate(selectedDates[1]);
+          } else if (selectedDates.length === 1) {
+            selectedStartDate = formatDate(selectedDates[0]);
+            selectedEndDate = formatDate(selectedDates[0]);
+          } else {
+            selectedStartDate = null;
+            selectedEndDate = null;
+          }
+          applyFilters();
+        }
+      });
+    }
+
+    function clearDatePicker() {
+      if (flatpickrInstance) {
+        flatpickrInstance.clear();
+      }
+      selectedStartDate = null;
+      selectedEndDate = null;
+      applyFilters();
+    }
+
+    // Quick Date Preset Logic
+    function setQuickDate(type) {
+      if (!allRecords.length) return;
+      const sortedDates = [...new Set(allRecords.map(r => r.date))].sort();
+      const latestDateStr = sortedDates[sortedDates.length - 1];
+      const maxDate = new Date(latestDateStr);
+
+      if (type === 'ALL') {
+        clearDatePicker();
+        return;
+      }
+
+      let startDate, endDate;
+      endDate = new Date(maxDate);
+
+      if (type === 'LAST_7_DAYS') {
+        startDate = new Date(maxDate);
+        startDate.setDate(startDate.getDate() - 6);
+      } else if (type === 'LAST_30_DAYS') {
+        startDate = new Date(maxDate);
+        startDate.setDate(startDate.getDate() - 29);
+      } else if (type === 'THIS_MONTH') {
+        startDate = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+        endDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 0);
+      } else if (type === 'LAST_MONTH') {
+        startDate = new Date(maxDate.getFullYear(), maxDate.getMonth() - 1, 1);
+        endDate = new Date(maxDate.getFullYear(), maxDate.getMonth(), 0);
+      }
+
+      selectedStartDate = formatDate(startDate);
+      selectedEndDate = formatDate(endDate);
+
+      if (flatpickrInstance) {
+        flatpickrInstance.setDate([selectedStartDate, selectedEndDate], false);
+      }
+      applyFilters();
+    }
+
+    function formatDate(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // JSONP Sheet Data Fetching (Bypasses CORS restrictions)
+    function fetchLiveFlexoData() {
+      const syncStatus = document.getElementById("syncStatus");
+      const syncText = document.getElementById("syncText");
+      syncStatus.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium";
+      syncText.innerText = "Syncing Google Sheet...";
+
+      const existing = document.getElementById("gviz-jsonp-script");
+      if (existing) existing.remove();
+
+      const script = document.createElement("script");
+      script.id = "gviz-jsonp-script";
+      script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:handleGvizResponse&gid=${GID}`;
+      script.onerror = function() {
+        console.warn("JSONP failed, switching to CSV fallback...");
+        fetchViaCSV();
+      };
+      document.body.appendChild(script);
+    }
+
+    window.handleGvizResponse = function(response) {
+      try {
+        if (!response || !response.table || !response.table.rows) {
+          throw new Error("Invalid table data received");
+        }
+        const rows = response.table.rows;
+        allRecords = [];
+
+        rows.forEach(r => {
+          if (!r.c) return;
+          const rawDate = r.c[0] ? (r.c[0].f || r.c[0].v) : "";
+          const shift = r.c[1] ? String(r.c[1].v || "").trim() : "";
+          const machine = r.c[2] ? String(r.c[2].v || "").trim() : "";
+          const operator = r.c[3] ? String(r.c[3].v || "").trim() : "UNASSIGNED";
+          const opening = r.c[4] ? Number(r.c[4].v) || 0 : 0;
+          const closing = r.c[5] ? Number(r.c[5].v) || 0 : 0;
+          const prod = r.c[6] ? Number(r.c[6].v) || 0 : 0;
+          const waste = r.c[7] ? Number(r.c[7].v) || 0 : 0;
+          const remark = (r.c[14] ? r.c[14].v : "") || (r.c[15] ? r.c[15].v : "") || "";
+
+          if (prod > 0 && rawDate) {
+            const dateStr = parseDate(rawDate);
+            allRecords.push({
+              date: dateStr,
+              month: dateStr.substring(0, 7),
+              shift: shift,
+              machine: machine,
+              operator: operator,
+              opening: opening,
+              closing: closing,
+              production: prod,
+              wastage: waste,
+              remark: String(remark).trim()
+            });
+          }
+        });
+
+        updateSyncSuccess();
+      } catch (err) {
+        console.error("Gviz parse error:", err);
+        fetchViaCSV();
+      }
+    };
+
+    async function fetchViaCSV() {
+      try {
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${GID}`;
+        const res = await fetch(csvUrl);
+        const text = await res.text();
+        const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+        
+        allRecords = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCsvLine(lines[i]);
+          if (!cols || cols.length < 7) continue;
+
+          const date = cols[0];
+          const shift = cols[1];
+          const machine = cols[2];
+          const operator = cols[3] || "UNASSIGNED";
+          const opening = parseFloat(cols[4]) || 0;
+          const closing = parseFloat(cols[5]) || 0;
+          const prod = parseFloat(cols[6]) || 0;
+          const waste = parseFloat(cols[7]) || 0;
+          const remark = cols[14] || cols[15] || "";
+
+          if (prod > 0 && date) {
+            const dateStr = parseDate(date);
+            allRecords.push({
+              date: dateStr,
+              month: dateStr.substring(0, 7),
+              shift: shift,
+              machine: machine,
+              operator: operator,
+              opening: opening,
+              closing: closing,
+              production: prod,
+              wastage: waste,
+              remark: remark
+            });
+          }
+        }
+        updateSyncSuccess();
+      } catch (e) {
+        console.error("CSV fetch failed:", e);
+        document.getElementById("syncStatus").className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium";
+        document.getElementById("syncText").innerText = "Connection Failed";
+      }
+    }
+
+    function parseCsvLine(line) {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"' || char === "'") {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    function parseDate(d) {
+      if (typeof d === "string" && d.startsWith("Date(")) {
+        const p = d.replace("Date(", "").replace(")", "").split(",");
+        const y = p[0].trim();
+        const m = String(Number(p[1]) + 1).padStart(2, '0');
+        const day = String(p[2]).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+      if (typeof d === "string" && d.includes("/")) {
+        const p = d.split("/");
+        if (p.length === 3) {
+          return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+        }
+      }
+      return String(d).substring(0, 10);
+    }
+
+    function updateSyncSuccess() {
+      const syncStatus = document.getElementById("syncStatus");
+      const syncText = document.getElementById("syncText");
+      syncStatus.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium";
+      syncText.innerText = `Connected: ${allRecords.length} Active Records`;
+
+      populateDropdownOptions();
+      applyFilters();
+    }
+
+    function populateDropdownOptions() {
+      const machineSelect = document.getElementById("filterMachine");
+      const operatorSelect = document.getElementById("filterOperator");
+
+      const machines = [...new Set(allRecords.map(r => r.machine))].filter(Boolean).sort();
+      const operators = [...new Set(allRecords.map(r => r.operator))].filter(Boolean).sort();
+
+      machineSelect.innerHTML = `<option value="ALL">All Machines</option>` + machines.map(m => `<option value="${m}">${m}</option>`).join("");
+      operatorSelect.innerHTML = `<option value="ALL">All Operators</option>` + operators.map(o => `<option value="${o}">${o}</option>`).join("");
+    }
+
+    function applyFilters() {
+      const selectedMachine = document.getElementById("filterMachine").value;
+      const selectedOperator = document.getElementById("filterOperator").value;
+      const selectedShift = document.getElementById("filterShift").value;
+
+      filteredRecords = allRecords.filter(r => {
+        if (selectedMachine !== "ALL" && r.machine !== selectedMachine) return false;
+        if (selectedOperator !== "ALL" && r.operator !== selectedOperator) return false;
+        if (selectedShift !== "ALL" && r.shift !== selectedShift) return false;
+        if (selectedStartDate && r.date < selectedStartDate) return false;
+        if (selectedEndDate && r.date > selectedEndDate) return false;
+        return true;
+      });
+
+      renderKPIs();
+      renderCharts();
+      renderTables();
+    }
+
+    function resetFilters() {
+      document.getElementById("filterMachine").value = "ALL";
+      document.getElementById("filterOperator").value = "ALL";
+      document.getElementById("filterShift").value = "ALL";
+      clearDatePicker();
+    }
+
+    function renderKPIs() {
+      const totalProd = filteredRecords.reduce((sum, r) => sum + r.production, 0);
+      const totalWaste = filteredRecords.reduce((sum, r) => sum + r.wastage, 0);
+      const runs = filteredRecords.length;
+      const scrapRate = totalProd > 0 ? ((totalWaste / totalProd) * 100).toFixed(3) : "0.00";
+      const avgShift = runs > 0 ? Math.round(totalProd / runs) : 0;
+
+      document.getElementById("kpiProduction").innerText = totalProd.toLocaleString();
+      document.getElementById("kpiWastage").innerText = totalWaste.toFixed(1) + " kg";
+      document.getElementById("kpiScrapRate").innerText = scrapRate + "%";
+      document.getElementById("kpiRuns").innerText = runs.toLocaleString();
+      document.getElementById("kpiAvgShift").innerText = avgShift.toLocaleString();
+    }
+
+    function renderCharts() {
+      renderTrendChart();
+      renderMachineChart();
+    }
+
+    function setTrendGranularity(g) {
+      trendGranularity = g;
+      document.getElementById("btnTrendDay").className = g === 'day' ? 'px-2.5 py-1 text-xs rounded font-medium bg-indigo-600 text-white' : 'px-2.5 py-1 text-xs rounded font-medium text-slate-400 hover:text-white';
+      document.getElementById("btnTrendMonth").className = g === 'month' ? 'px-2.5 py-1 text-xs rounded font-medium bg-indigo-600 text-white' : 'px-2.5 py-1 text-xs rounded font-medium text-slate-400 hover:text-white';
+      renderTrendChart();
+    }
+
+    function renderTrendChart() {
+      const ctx = document.getElementById("trendChart").getContext("2d");
+      const groupData = {};
+      filteredRecords.forEach(r => {
+        const key = trendGranularity === 'month' ? r.month : r.date;
+        groupData[key] = (groupData[key] || 0) + r.production;
+      });
+
+      const labels = Object.keys(groupData).sort();
+      const values = labels.map(l => groupData[l]);
+
+      if (trendChartInstance) trendChartInstance.destroy();
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Production (Bags)',
+            data: values,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.35,
+            pointRadius: labels.length > 30 ? 1 : 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function renderMachineChart() {
+      const ctx = document.getElementById("machineChart").getContext("2d");
+      const groupData = {};
+      filteredRecords.forEach(r => {
+        groupData[r.machine] = (groupData[r.machine] || 0) + r.production;
+      });
+
+      const labels = Object.keys(groupData).sort((a,b) => groupData[b] - groupData[a]);
+      const values = labels.map(l => groupData[l]);
+
+      if (machineChartInstance) machineChartInstance.destroy();
+
+      machineChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Production (Bags)',
+            data: values,
+            backgroundColor: '#a855f7',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function renderTables() {
+      // Machine Breakdown Table
+      const machineMap = {};
+      filteredRecords.forEach(r => {
+        if (!machineMap[r.machine]) machineMap[r.machine] = { prod: 0, waste: 0, runs: 0 };
+        machineMap[r.machine].prod += r.production;
+        machineMap[r.machine].waste += r.wastage;
+        machineMap[r.machine].runs += 1;
+      });
+
+      const machineTbody = document.getElementById("machineTableBody");
+      machineTbody.innerHTML = Object.keys(machineMap)
+        .sort((a,b) => machineMap[b].prod - machineMap[a].prod)
+        .map(m => {
+          const item = machineMap[m];
+          return `
+            <tr class="hover:bg-slate-700/40 transition">
+              <td class="py-2.5 px-3 font-medium text-white">${m}</td>
+              <td class="py-2.5 px-3 text-right font-semibold text-indigo-400">${item.prod.toLocaleString()}</td>
+              <td class="py-2.5 px-3 text-right text-amber-400">${item.waste.toFixed(1)}</td>
+              <td class="py-2.5 px-3 text-right">${Math.round(item.prod / item.runs).toLocaleString()}</td>
+              <td class="py-2.5 px-3 text-right text-slate-400">${item.runs}</td>
+            </tr>
+          `;
+        }).join("");
+
+      // Operator Breakdown Table
+      const opMap = {};
+      filteredRecords.forEach(r => {
+        if (!opMap[r.operator]) opMap[r.operator] = { prod: 0, waste: 0, runs: 0 };
+        opMap[r.operator].prod += r.production;
+        opMap[r.operator].waste += r.wastage;
+        opMap[r.operator].runs += 1;
+      });
+
+      const opTbody = document.getElementById("operatorTableBody");
+      opTbody.innerHTML = Object.keys(opMap)
+        .sort((a,b) => opMap[b].prod - opMap[a].prod)
+        .map(o => {
+          const item = opMap[o];
+          return `
+            <tr class="hover:bg-slate-700/40 transition">
+              <td class="py-2.5 px-3 font-medium text-white">${o}</td>
+              <td class="py-2.5 px-3 text-right font-semibold text-emerald-400">${item.prod.toLocaleString()}</td>
+              <td class="py-2.5 px-3 text-right text-amber-400">${item.waste.toFixed(1)}</td>
+              <td class="py-2.5 px-3 text-right">${Math.round(item.prod / item.runs).toLocaleString()}</td>
+              <td class="py-2.5 px-3 text-right text-slate-400">${item.runs}</td>
+            </tr>
+          `;
+        }).join("");
+
+      // Detailed Production Log Table
+      const logTbody = document.getElementById("detailedTableBody");
+      document.getElementById("logCount").innerText = `Showing ${filteredRecords.length} records`;
+      logTbody.innerHTML = filteredRecords.slice().reverse().map(r => `
+        <tr class="hover:bg-slate-700/30 transition text-slate-300">
+          <td class="py-2 px-3 whitespace-nowrap">${r.date}</td>
+          <td class="py-2 px-3">${r.shift}</td>
+          <td class="py-2 px-3 font-medium text-white">${r.machine}</td>
+          <td class="py-2 px-3">${r.operator}</td>
+          <td class="py-2 px-3 text-right font-mono text-[11px]">${r.opening ? r.opening.toLocaleString() : '-'}</td>
+          <td class="py-2 px-3 text-right font-mono text-[11px]">${r.closing ? r.closing.toLocaleString() : '-'}</td>
+          <td class="py-2 px-3 text-right font-semibold text-indigo-400">${r.production.toLocaleString()}</td>
+          <td class="py-2 px-3 text-right text-amber-400">${r.wastage}</td>
+          <td class="py-2 px-3 text-slate-400 text-[11px] max-w-xs truncate">${r.remark || '-'}</td>
+        </tr>
+      `).join("");
+    }
+
+    // Auto load on start
+    window.addEventListener("DOMContentLoaded", () => {
+      initDatePicker();
+      fetchLiveFlexoData();
+    });
+  </script>
+</body>
+</html>
